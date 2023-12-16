@@ -6,8 +6,8 @@ use tabled::settings::{Alignment, Modify, Panel, Style};
 use tabled::settings::object::Rows;
 use tabled::Table;
 use win_sys::FILE_MAP_READ;
-
-include!("table_types.rs");
+use crate::hwinfo_types::{HWiNFOReadingElement, HWiNFOSensorElement, HWiNFOSharedMemory};
+use crate::table_types::{Reading, Sensor};
 
 fn utf8_to_str(utf8: &[u8]) -> &str {
     std::ffi::CStr::from_bytes_until_nul(utf8).unwrap().to_str().unwrap()

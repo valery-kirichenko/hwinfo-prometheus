@@ -1,23 +1,22 @@
 use tabled::Tabled;
-
-include!("hwinfo_types.rs");
+use crate::hwinfo_types::SensorReadingType;
 
 #[derive(Tabled)]
-struct Sensor {
-    id: u32,
-    instance: u32,
-    name: &'static str,
+pub struct Sensor {
+    pub id: u32,
+    pub instance: u32,
+    pub name: &'static str,
 }
 
 #[derive(Tabled)]
-struct Reading {
-    id: u32,
-    sensor_index: u32,
-    label: &'static str,
-    unit: &'static str,
-    value: f64,
-    min_value: f64,
-    avg_value: f64,
-    max_value: f64,
-    reading_type: SensorReadingType,
+pub struct Reading {
+    pub id: u32,
+    pub sensor_index: u32,
+    pub label: &'static str,
+    pub unit: &'static str,
+    pub value: f64,
+    pub min_value: f64,
+    pub avg_value: f64,
+    pub max_value: f64,
+    pub reading_type: SensorReadingType,
 }
