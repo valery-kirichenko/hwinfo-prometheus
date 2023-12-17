@@ -1,5 +1,5 @@
 [package]
-name = "hwinfo-svm"
+name = "hwinfo-prometheus"
 version = "0.1.0"
 edition = "2021"
 

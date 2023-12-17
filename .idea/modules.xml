@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/hwinfo-svm.iml" filepath="$PROJECT_DIR$/hwinfo-svm.iml" />
+      <module fileurl="file://$PROJECT_DIR$/hwinfo-prometheus.iml" filepath="$PROJECT_DIR$/hwinfo-prometheus.iml" />
     </modules>
   </component>
 </project>
