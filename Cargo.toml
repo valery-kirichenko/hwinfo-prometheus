@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 win-sys = "0.3.1"
-tabled = "0.14.0"
 prometheus-client = "0.22.0"
+axum = "0.7.2"
+tokio = { version = "1.35.0", features = ["full"] }

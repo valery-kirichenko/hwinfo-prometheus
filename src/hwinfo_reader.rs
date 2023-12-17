@@ -53,7 +53,6 @@ impl Reader<'_> {
             readings_ptr = unsafe { readings_ptr.add(1) };
         }
     }
-
 }
 
 #[derive(Debug, Clone)]

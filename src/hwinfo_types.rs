@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[allow(unused)]
 pub enum SensorReadingType {
     None,
