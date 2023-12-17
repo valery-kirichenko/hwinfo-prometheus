@@ -22,7 +22,7 @@ impl Display for SensorReadingType {
 }
 
 #[repr(C, packed(1))]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct HWiNFOReadingElement {
     pub reading_type: SensorReadingType,
     pub sensor_index: u32,
@@ -39,7 +39,7 @@ pub struct HWiNFOReadingElement {
 }
 
 #[repr(C, packed(1))]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct HWiNFOSensorElement {
     pub sensor_id: u32,
     pub sensor_instance: u32,
@@ -49,7 +49,7 @@ pub struct HWiNFOSensorElement {
 }
 
 #[repr(C, packed(1))]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct HWiNFOSharedMemory {
     pub signature: u32,
     pub version: u32,

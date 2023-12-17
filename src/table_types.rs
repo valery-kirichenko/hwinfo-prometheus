@@ -11,9 +11,9 @@ pub struct Sensor {
 #[derive(Tabled)]
 pub struct Reading {
     pub id: u32,
-    pub sensor_index: u32,
-    pub label: &'static str,
-    pub unit: &'static str,
+    pub sensor_name: String,
+    pub label: String,
+    pub unit: String,
     pub value: f64,
     pub min_value: f64,
     pub avg_value: f64,
