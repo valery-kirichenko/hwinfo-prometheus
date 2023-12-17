@@ -1,19 +1,18 @@
 use std::sync::{Arc, RwLock};
-use std::sync::atomic::{AtomicI64, AtomicU64};
+use std::sync::atomic::AtomicU64;
 use std::thread;
 use std::time::Duration;
 
-use axum::{Extension, http, Router};
-use axum::http::header::CONTENT_TYPE;
-use axum::http::{HeaderMap, Response};
-use axum::response::{Html, IntoResponse};
+use axum::{Extension, Router};
+use axum::http::HeaderMap;
+use axum::response::IntoResponse;
 use axum::routing::get;
 use prometheus_client::encoding::{EncodeLabelSet, EncodeLabelValue};
 use prometheus_client::encoding::text::encode;
-use prometheus_client::metrics::counter::Counter;
 use prometheus_client::metrics::family::Family;
 use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::registry::Registry;
+
 use crate::hwinfo_reader::Reader;
 use crate::hwinfo_types::SensorReadingType;
 
