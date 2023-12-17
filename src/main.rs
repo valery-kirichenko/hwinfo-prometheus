@@ -4,10 +4,8 @@ use std::thread;
 use std::time::Duration;
 
 use axum::{Extension, Router};
-use axum::http::HeaderMap;
-use axum::response::IntoResponse;
 use axum::routing::get;
-use prometheus_client::encoding::{EncodeLabelSet, EncodeLabelValue};
+use prometheus_client::encoding::EncodeLabelSet;
 use prometheus_client::encoding::text::encode;
 use prometheus_client::metrics::family::Family;
 use prometheus_client::metrics::gauge::Gauge;
@@ -28,7 +26,6 @@ struct AppState {
 }
 
 type SharedState = Arc<RwLock<AppState>>;
-type SharedMetrics = Arc<RwLock<Metrics>>;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
 pub struct HWiNFOLabels {
@@ -150,13 +147,11 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn handler(Extension(state): Extension<SharedState>, Extension(metrics): Extension<SharedMetrics>) -> impl IntoResponse {
+async fn handler(Extension(state): Extension<SharedState>) -> String {
     let state = state.read().unwrap();
 
     let mut body = String::new();
     encode(&mut body, &state.registry).unwrap();
 
-    let mut headers = HeaderMap::new();
-    // headers.insert(CONTENT_TYPE, "application/openmetrics-text; version=1.0.0; charset=utf-8".parse().unwrap());
-    (headers, body)
+    body
 }
