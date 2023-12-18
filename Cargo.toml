@@ -10,3 +10,4 @@ win-sys = "0.3.1"
 prometheus-client = "0.22.0"
 axum = "0.7.2"
 tokio = { version = "1.35.0", features = ["full"] }
+tabled = "0.14.0"
