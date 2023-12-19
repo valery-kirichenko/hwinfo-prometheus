@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use log::info;
 
 use tabled::settings::{Alignment, Modify, Panel, Style};
 use tabled::settings::object::Rows;
@@ -86,7 +87,7 @@ impl Reader<'_> {
             .with(Style::sharp())
             .with(Modify::new(Rows::first()).with(Alignment::center()))
             .to_string();
-        println!("{}", table);
+        info!("{}", table);
     }
 }
 

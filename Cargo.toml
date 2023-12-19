@@ -11,3 +11,21 @@ prometheus-client = "0.22.0"
 axum = "0.7.2"
 tokio = { version = "1.35.0", features = ["full"] }
 tabled = "0.14.0"
+log = "0.4.20"
+fern = "0.6.2"
+humantime = "2.1.0"
+directories = "5.0.1"
+
+[build-dependencies]
+embed-manifest = "1.4.0"
+winresource = "0.1.17"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+
+[package.metadata.winresource]
+LegalCopyright = "© Valery Kirichenko"
+ProductName = "HWiNFO Prometheus"
+FileDescription = "A bridge between HWiNFO and Prometheus"

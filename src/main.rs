@@ -1,10 +1,16 @@
-// #![windows_subsystem = "windows"]
+#![cfg_attr(
+    all(target_os = "windows", not(debug_assertions)),
+    windows_subsystem = "windows"
+)]
 
 use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
+use std::time::{Duration, SystemTime};
 
 use axum::{Extension, Router};
 use axum::routing::get;
+use directories::ProjectDirs;
+use log::{error, info, warn};
 use prometheus_client::encoding::EncodeLabelSet;
 use prometheus_client::encoding::text::encode;
 use prometheus_client::metrics::family::Family;
@@ -70,6 +76,8 @@ impl Metrics {
 
 #[tokio::main]
 async fn main() {
+    setup_logger();
+
     let metrics = Arc::new(RwLock::new(Metrics { ..Default::default() }));
     let (tx_rq, mut rx_rq) = mpsc::channel::<bool>(1);
     let (tx_rs, rx_rs) = mpsc::channel::<bool>(1);
@@ -100,14 +108,30 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
         .await
         .unwrap();
-    println!("Listening on {}", listener.local_addr().unwrap());
+    info!("Listening on {}", listener.local_addr().unwrap());
 
     let handle = Handle::current();
     std::thread::spawn(move || {
-        let mut reader = match Reader::new() {
-            Ok(reader) => reader,
-            Err(e) => panic!("{}", e.to_string()),
-        };
+        let mut reader: Reader;
+        let mut attempts = 0;
+        loop {
+            match Reader::new() {
+                Ok(reader_instance) => {
+                    reader = reader_instance;
+                    info!("HWiNFO Reader is ready");
+                    break;
+                },
+                Err(_) => {
+                    if attempts > 5 {
+                        error!("HWiNFO is not available, retries exceeded. Exiting...");
+                        std::process::exit(1);
+                    }
+                    warn!("HWiNFO is not available, retrying in 5s");
+                    attempts += 1;
+                    std::thread::sleep(Duration::from_secs(5));
+                },
+            };
+        }
 
         loop {
             handle.block_on(async {
@@ -144,4 +168,23 @@ async fn handler(Extension(state): Extension<SharedState>) -> String {
     encode(&mut body, &state.registry).unwrap();
 
     body
+}
+
+fn setup_logger() {
+    let dirs = ProjectDirs::from("dev", "Valery Kirichenko", "HWiNFO Prometheus").unwrap();
+    let log_path = dirs.data_local_dir().join("output.log");
+    std::fs::create_dir_all(dirs.data_local_dir()).unwrap();
+    fern::Dispatch::new()
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "[{} {:5}] {}",
+                humantime::format_rfc3339_millis(SystemTime::now()),
+                record.level(),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Debug)
+        .chain(std::io::stdout())
+        .chain(fern::log_file(log_path).unwrap())
+        .apply().unwrap();
 }
