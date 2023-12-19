@@ -53,7 +53,6 @@ impl Reader<'_> {
 
     pub fn update_readings(&mut self) {
         self.info = unsafe { &(*self.svm_ptr) };
-        println!("{:?}", self.info);
 
         let mut readings_ptr = self.readings_ptr;
         self.readings.clear();
