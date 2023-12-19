@@ -33,8 +33,8 @@ fn utf8_to_str(utf8: &[u8]) -> String {
 
 struct AppState {
     registry: Registry,
-    tx_rq: Sender<bool>,
-    rx_rs: Receiver<bool>,
+    tx_rq: Sender<()>,
+    rx_rs: Receiver<()>,
 }
 
 type SharedState = Arc<RwLock<AppState>>;
@@ -79,8 +79,8 @@ async fn main() {
     setup_logger();
 
     let metrics = Arc::new(RwLock::new(Metrics { ..Default::default() }));
-    let (tx_rq, mut rx_rq) = mpsc::channel::<bool>(1);
-    let (tx_rs, rx_rs) = mpsc::channel::<bool>(1);
+    let (tx_rq, mut rx_rq) = mpsc::channel::<()>(1);
+    let (tx_rs, rx_rs) = mpsc::channel::<()>(1);
     let shared_state = Arc::new(RwLock::new(AppState {
         registry: <Registry>::default(),
         tx_rq,
@@ -151,8 +151,8 @@ async fn main() {
                 });
             }
             handle.block_on(async {
-                tx_rs.send(true).await.expect("Unable to send a response");
-            })
+                tx_rs.send(()).await.expect("Unable to send a response");
+            });
         }
     });
 
@@ -161,7 +161,7 @@ async fn main() {
 
 async fn handler(Extension(state): Extension<SharedState>) -> String {
     let mut state = state.write().await;
-    state.tx_rq.send(true).await.expect("Unable to send a request");
+    state.tx_rq.send(()).await.expect("Unable to send a request");
     state.rx_rs.recv().await;
 
     let mut body = String::new();
