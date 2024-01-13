@@ -10,7 +10,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Release Build
         run: cargo build --release
-      - name: 'Upload Artifact'
+      - name: Compress a binary
+        uses: crazy-max/ghaction-upx@v3
+        with:
+          version: latest
+          files: target/release/hwinfo-prometheus.exe
+          args: --best --lzma
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: hwinfo-prometheus
