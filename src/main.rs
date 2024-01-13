@@ -116,7 +116,7 @@ async fn main() {
         .layer(Extension(shared_state))
         .layer(Extension(metrics.clone()));
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
         .await
         .unwrap();
     info!("Listening on {}", listener.local_addr().unwrap());
