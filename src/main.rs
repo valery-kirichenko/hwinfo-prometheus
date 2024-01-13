@@ -40,10 +40,10 @@ struct AppState {
 type SharedState = Arc<RwLock<AppState>>;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
-pub struct HWiNFOLabels {
-    pub sensor: String,
-    pub reading: String,
-    pub unit: String,
+struct HWiNFOLabels {
+    sensor: String,
+    reading: String,
+    unit: String,
 }
 
 #[derive(Default)]
@@ -59,18 +59,29 @@ pub struct Metrics {
 }
 
 impl Metrics {
-    pub fn gauge_reading(&self, label: HWiNFOLabels, reading_type: SensorReadingType, value: f64) {
+    fn gauge_reading(&self, label: &HWiNFOLabels, reading_type: &SensorReadingType, value: f64) {
         match reading_type {
-            SensorReadingType::None => {}
-            SensorReadingType::Temp => { self.temperature.get_or_create(&label).set(value); }
-            SensorReadingType::Volt => { self.voltage.get_or_create(&label).set(value); }
-            SensorReadingType::Fan => { self.fan_speed.get_or_create(&label).set(value); }
-            SensorReadingType::Current => { self.current.get_or_create(&label).set(value); }
-            SensorReadingType::Power => { self.power.get_or_create(&label).set(value); }
-            SensorReadingType::Clock => { self.clock.get_or_create(&label).set(value); }
-            SensorReadingType::Usage => { self.usage.get_or_create(&label).set(value); }
-            SensorReadingType::Other => { self.other.get_or_create(&label).set(value); }
+            SensorReadingType::None => { warn!("None readings are not supported, ignoring {}", label.reading); }
+            SensorReadingType::Temp => { self.temperature.get_or_create(label).set(value); }
+            SensorReadingType::Volt => { self.voltage.get_or_create(label).set(value); }
+            SensorReadingType::Fan => { self.fan_speed.get_or_create(label).set(value); }
+            SensorReadingType::Current => { self.current.get_or_create(label).set(value); }
+            SensorReadingType::Power => { self.power.get_or_create(label).set(value); }
+            SensorReadingType::Clock => { self.clock.get_or_create(label).set(value); }
+            SensorReadingType::Usage => { self.usage.get_or_create(label).set(value); }
+            SensorReadingType::Other => { self.other.get_or_create(label).set(value); }
         };
+    }
+
+    fn clear_readings(&self) {
+        self.temperature.clear();
+        self.voltage.clear();
+        self.fan_speed.clear();
+        self.current.clear();
+        self.power.clear();
+        self.clock.clear();
+        self.usage.clear();
+        self.other.clear();
     }
 }
 
@@ -137,18 +148,26 @@ async fn main() {
             handle.block_on(async {
                 rx_rq.recv().await;
             });
-            reader.update_readings();
-            for reading in &reader.readings {
-                let sensor = reader.sensors.get(reading.sensor_index as usize).unwrap();
-                let reading_type = reading.reading_type;
-                handle.block_on(async {
-                    metrics.read().await.gauge_reading(HWiNFOLabels
-                                                       {
-                                                           sensor: utf8_to_str(&sensor.user_name_utf8),
-                                                           reading: utf8_to_str(&reading.user_label_utf8),
-                                                           unit: utf8_to_str(&reading.unit_utf8),
-                                                       }, reading_type, reading.value);
-                });
+            match reader.update_readings() {
+                Ok(_) => {
+                    for reading in &reader.readings {
+                        let sensor = reader.sensors.get(reading.sensor_index as usize).unwrap();
+                        let reading_type = reading.reading_type;
+                        handle.block_on(async {
+                            metrics.read().await.gauge_reading(&HWiNFOLabels
+                            {
+                                sensor: utf8_to_str(&sensor.user_name_utf8),
+                                reading: utf8_to_str(&reading.user_label_utf8),
+                                unit: utf8_to_str(&reading.unit_utf8),
+                            }, &reading_type, reading.value);
+                        });
+                    }
+                }
+                Err(_) => {
+                    handle.block_on(async {
+                        metrics.read().await.clear_readings();
+                    });
+                }
             }
             handle.block_on(async {
                 tx_rs.send(()).await.expect("Unable to send a response");

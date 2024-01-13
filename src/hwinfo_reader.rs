@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use log::info;
+use log::{error, info, warn};
 
 use tabled::settings::{Alignment, Modify, Panel, Style};
 use tabled::settings::object::Rows;
@@ -17,8 +17,10 @@ pub struct Reader<'a> {
     pub readings: Vec<&'a HWiNFOReadingElement>,
 
     _view: ViewOfFile,
-    svm_ptr: *const HWiNFOSharedMemory,
-    readings_ptr: *const HWiNFOReadingElement,
+    _previous_update: i64,
+    _failed_updates: i8,
+    _svm_ptr: *const HWiNFOSharedMemory,
+    _readings_ptr: *const HWiNFOReadingElement,
 }
 
 impl Reader<'_> {
@@ -28,9 +30,9 @@ impl Reader<'_> {
             Err(_) => return Err(SVMOpenError),
         };
         let _view = win_sys::MapViewOfFile(file_mapping.as_handle(), FILE_MAP_READ, 0, 0, 0).unwrap();
-        let svm_ptr = _view.as_mut_ptr() as *const HWiNFOSharedMemory;
-        let info = unsafe { &(*svm_ptr) };
-        let mut sensors_ptr = unsafe { svm_ptr.add(1) as *const HWiNFOSensorElement };
+        let _svm_ptr = _view.as_mut_ptr() as *const HWiNFOSharedMemory;
+        let info = unsafe { &(*_svm_ptr) };
+        let mut sensors_ptr = unsafe { _svm_ptr.add(1) as *const HWiNFOSensorElement };
 
         let mut sensors = Vec::with_capacity(info.sensor_elements_number as usize);
         for _ in 0..info.sensor_elements_number {
@@ -44,24 +46,59 @@ impl Reader<'_> {
             sensors,
             readings: Vec::with_capacity(info.reading_elements_number as usize),
             _view,
-            svm_ptr,
-            readings_ptr: sensors_ptr as *const HWiNFOReadingElement,
+            _svm_ptr,
+            _readings_ptr: sensors_ptr as *const HWiNFOReadingElement,
+            _previous_update: 0,
+            _failed_updates: 0,
         };
-        result.update_readings();
+        result.update_readings()?;
 
         Ok(result)
     }
 
-    pub fn update_readings(&mut self) {
-        self.info = unsafe { &(*self.svm_ptr) };
+    pub fn update_readings(&mut self) -> Result<(), SVMOpenError> {
+        self.info = unsafe { &(*self._svm_ptr) };
+        let poll_time = self.info.poll_time;
+        let period = self.info.polling_period;
+        info!("prev: {}, current: {}, period: {}", self._previous_update, poll_time, period);
+        if self._previous_update > 0 && (self.info.poll_time - self._previous_update).abs() * 1000 < self.info.polling_period as i64 {
+            warn!("Failed to update readings");
+            self._failed_updates += 1;
+        } else {
+            info!("Update successful");
+            self._previous_update = self.info.poll_time;
+            self._failed_updates = 0;
+        }
+        if self._failed_updates > 2 {
+            warn!("Reinitializing reader");
+            // We should reinit in case HWiNFO was closed and there are no updates
+            let reinitialized = match Self::new() {
+                Ok(reader) => reader,
+                Err(e) => {
+                    error!("Reinitialization failed");
+                    return Err(e)
+                },
+            };
+            self.info = reinitialized.info;
+            self.sensors = reinitialized.sensors;
+            self.readings = reinitialized.readings;
+            self._view = reinitialized._view;
+            self._svm_ptr = reinitialized._svm_ptr;
+            self._readings_ptr = reinitialized._readings_ptr;
+            self._previous_update = reinitialized._previous_update;
+            self._failed_updates = 0;
+            return Ok(());
+        }
 
-        let mut readings_ptr = self.readings_ptr;
+        let mut readings_ptr = self._readings_ptr;
         self.readings.clear();
         for _ in 0..self.info.reading_elements_number {
             let reading = unsafe { &(*readings_ptr) };
             self.readings.push(reading);
             readings_ptr = unsafe { readings_ptr.add(1) };
         }
+
+        Ok(())
     }
 
     #[allow(unused)]
